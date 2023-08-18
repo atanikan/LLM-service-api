@@ -52,7 +52,6 @@ async def run_llama_13(
         command.append("--token-latency")
     if disable_optimize_transformers:
         command.append("--disable_optimize_transformers")
-    print("command 13B>>",command)
     try:
         output = main(command)
         return output
@@ -106,7 +105,6 @@ async def run_llama_70(
         command.append("--token-latency")
     if disable_optimize_transformers:
         command.append("--disable_optimize_transformers")
-    print("command 7-B>>",command)
     try:
         return parsl_70b.main(command)
     except Exception as e:
