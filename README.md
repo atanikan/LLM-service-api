@@ -1,14 +1,20 @@
-# Running LLM on Sunspot
+# Running Llama2 Inference on Sunspot
 
 We have provided 3 options to run the Llama LLM on Sunspot - optimized by Intel to run on PVC.
 
-* 13B and 70B Llama LLM model using bash scripts on Sunspot
-* 13B and 70B Llama LLM model using Parsl
-* 13B and 70B Llama LLM model using REST API which wraps parsl from your laptop/desktop (Work in Progress)
+* 13B and 70B Llama2 model using bash scripts on Sunspot
+* 13B and 70B Llama2 model using Parsl
+* 13B and 70B Llama2 model using REST API which wraps parsl from your laptop/desktop (Work in Progress)
 
 # Table of Contents
 - [13B Quick Start](#13BQuickStart)
 - [70B Quick Start](#70BQuickStart)
+- [LLAMA2 Files, Data and Scripts](#LLAMA2Files)
+- [Sunspot](#Sunspot)
+- [Building a custom 13B conda environment](#13BBuildingEnvironments)
+- [Building a custom 70B conda environment](#70BBuildingEnvironments)
+- [Inference with Parsl](#Inference_with_Parsl)
+- [Restful Inference Service - WIP](#Restful_Inference_Service)
 
 <a name="13BQuickStart"></a>
 ## 13B Llama2 Inference - Quick Start Guide
@@ -116,7 +122,17 @@ qsub <foo.sh>
 Note: This uses a conda environment located at `/lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-70b`
 
 
-## Getting on Sunspot and setup 
+<a name="LLAMA2Files"></a>
+## Llama2 Model Weights and Related Files
+The Llama2 Model files are located at `/lus/gila/projects/Aurora_deployment/anl_llama`. You can find a .tar.gz version at `/lus/gila/projects/Aurora_deployment/anl_llama.tar.gz`
+You can copy it to a directory of your choice.
+
+```bash
+tar -xvf /lus/gila/projects/Aurora_deployment/anl_llama.tar.gz -C <path>
+```
+
+<a name="Sunspot"></a>
+## Getting on Sunspot 
 1. SSH to sunspot
 ```
 ssh -J username@bastion.alcf.anl.gov username@sunspot.alcf.anl.gov
@@ -130,17 +146,10 @@ export https_proxy=http://proxy.alcf.anl.gov:3128
 git config --global http.proxy http://proxy.alcf.anl.gov:3128
 ```
 
-## Llama2 Model Weights and Related Files
-The Llama2 Model files are located at `/lus/gila/projects/Aurora_deployment/anl_llama`. You can find a .tar.gz version at `/lus/gila/projects/Aurora_deployment/anl_llama.tar.gz`
-You can copy it to a directory of your choice.
+<a name="BuildingEnvironments"></a>
+## 13B and 70B Llama Inference using bash scripts on Sunspot
 
-```bash
-tar -xvf /lus/gila/projects/Aurora_deployment/anl_llama.tar.gz -C <path>
-```
-
-
-## 13B and 70B Llama Inferene using bash scripts on Sunspot
-
+<a name="13BBuildingEnvironments"></a>
 ### Building a custom Conda environment for 13B model
 
 :bulb: **Note:** You can directly use the conda environment `/lus/gila/projects/Aurora_deployment/conda_env_llm` and skip conda setup steps 1-3 below. Just run `conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b`
@@ -218,7 +227,8 @@ qsub run_model.sh
 
 :bulb: **Note:** You can use `conda deactivate` to deactivate current conda environment
 
-### Running 70B model
+<a name="70BBuildingEnvironments"></a>
+### Building a custom Conda environment for 70B model
 
 :bulb: **Note:** You can directly use the conda environment `/lus/gila/projects/Aurora_deployment/conda_env_llm` and skip conda setup steps 1-2 below. Just run `conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-70b`
 
@@ -300,7 +310,8 @@ cd /lus/gila/projects/Aurora_deployment/anl_llama/70B/intel-extension-for-transf
 mpirun -np 4 ./run_script.sh  python -u run_generation_with_deepspeed.py -m /lus/gila/projects/Aurora_deployment/anl_llama/model_weights/huggingface/llama2 --benchmark --input-tokens=1024 --max-new-tokens=128 |& tee llma-70.log
 ```
 
-## 13B and 70B Llama LLM model using Parsl
+<a name="Inference_with_Parsl"></a>
+## 13B and 70B Llama Inferene using Parsl
 1. We can use parsl to run the same script.
 2. Clone this repository. Ensure you have your the public key added to user token setup correctly in Github to be able to clone repository using ssh
 ```bash
@@ -332,6 +343,7 @@ python parsl_service.py ~/anl_llama/70B/intel-extension-for-transformers/example
 
 :bulb: **Note:** Ensure the "~" are pointing to the right location. if not home directory
 
+<a name="Restful_Inference_Service"></a>
 ## Adding a RESTAPI calls to the model to achieve Inference as a service (Work In Progress)
 :bulb: **Note:** You can directly use the conda environment `/lus/gila/projects/Aurora_deployment/conda_env_llm` and skip conda setup step 1  below. Just run `conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b` OR `conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-70b` 
 
