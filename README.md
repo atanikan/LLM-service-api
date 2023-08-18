@@ -1,9 +1,55 @@
 # Running LLM on Sunspot
+
 We have provided 3 options to run the Llama LLM on Sunspot - optimized by Intel to run on PVC.
 
 * 13B and 70B Llama LLM model using bash scripts on Sunspot
 * 13B and 70B Llama LLM model using Parsl
 * 13B and 70B Llama LLM model using REST API which wraps parsl from your laptop/desktop
+
+
+## 13B Llama2 Inference - Quick Start Guide
+
+1. SSH to sunspot
+```
+ssh -J username@bastion.alcf.anl.gov username@sunspot.alcf.anl.gov
+```
+
+2. Sample submission script   
+```bash
+#!/bin/bash
+
+#PBS -A Aurora_deployment
+#PBS -q workq
+#PBS -l select=1
+#PBS -l walltime=30:00
+
+export SYCL_PI_LEVEL_ZERO_USE_IMMEDIATE_COMMANDLISTS=1 
+export ENABLE_SDP_FUSION=1
+
+source /soft/datascience/conda-2023-01-31/miniconda3/bin/activate
+#This is the conda environment for the 13B llama inference
+conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b
+
+source /soft/compilers/oneapi/2023.05.15.001/oneapi/compiler/latest/env/vars.sh
+source /soft/compilers/oneapi/2023.05.15.001/oneapi/mkl/latest/env/vars.sh
+
+SRC_PATH=/lus/gila/projects/Aurora_deployment/anl_llama/13B/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation
+
+python -u $SRC_PATH/run_llama.py --device xpu --model-dir "/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy
+```
+
+Next, submit the above script
+```bash
+qsub <foo.sh>
+```
+
+
+## 70B - Quick Start Guide
+1. SSH to sunspot
+```
+ssh -J username@bastion.alcf.anl.gov username@sunspot.alcf.anl.gov
+```
+
 
 ## Initial Setup
 1. SSH to sunspot
@@ -18,20 +64,13 @@ export http_proxy=http://proxy.alcf.anl.gov:3128
 export https_proxy=http://proxy.alcf.anl.gov:3128
 git config --global http.proxy http://proxy.alcf.anl.gov:3128
 ```
-3. Either use a custom installation of miniconda or use the one here 
-`/soft/datascience/conda-2023-01-31/miniconda3/bin/conda`. To use it you'll need to first initialize your bash and source it.
-```bash
-/soft/datascience/conda-2023-01-31/miniconda3/bin/conda init bash
-```
-```
-source ~/.bashrc
-```
 
-4. Unzip the Llama LLM model files tuned to work on Sunspot into your directory of choice. The file is available here `/lus/gila/projects/Aurora_deployment/anl_llama.tar.gz`. Alternatively we have an unzipped version here `/lus/gila/projects/Aurora_deployment/anl_llama`. You can copy it to a directory of your choice.
+3. Unzip the Llama LLM model files tuned to work on Sunspot into your directory of choice. The file is available here `/lus/gila/projects/Aurora_deployment/anl_llama.tar.gz`. Alternatively we have an unzipped version here `/lus/gila/projects/Aurora_deployment/anl_llama`. You can copy it to a directory of your choice.
 
 ```bash
 tar -xvf /lus/gila/projects/Aurora_deployment/anl_llama.tar.gz -C <path>
 ```
+
 
 ## 13B and 70B Llama LLM model using bash scripts on Sunspot
 
