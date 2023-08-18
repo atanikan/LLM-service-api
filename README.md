@@ -33,9 +33,15 @@ conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b
 source /soft/compilers/oneapi/2023.05.15.001/oneapi/compiler/latest/env/vars.sh
 source /soft/compilers/oneapi/2023.05.15.001/oneapi/mkl/latest/env/vars.sh
 
+MODEL_DIR=/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/llma_models/llma-2-convert13B
 SRC_PATH=/lus/gila/projects/Aurora_deployment/anl_llama/13B/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation
 
-python -u $SRC_PATH/run_llama.py --device xpu --model-dir "/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy
+#13B 32 in 32 out
+#python -u $SRC_PATH/run_llama.py --device xpu --model-dir "/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy
+
+#13B 1024 in 128 out
+python -u $SRC_PATH/run_llama.py --device xpu --model-dir $MODEL_DIR --dtype float16 --ipex --greedy  --input-tokens 1024 --max-new-tokens 128
+
 ```
 
 Next, submit the above script
