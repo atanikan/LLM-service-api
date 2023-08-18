@@ -215,7 +215,7 @@ python parsl_service.py ~/anl_llama/70B/intel-extension-for-transformers/example
 
 :bulb: **Note:** Ensure the "~" are pointing to the right location. if not home directory
 
-## Adding a RESTAPI calls to the model to achieve Inference as a service
+## Adding a RESTAPI calls to the model to achieve Inference as a service (Work In Progress)
 :bulb: **Note:** You can directly use the conda environment `/lus/gila/projects/Aurora_deployment/conda_env_llm` and skip conda setup step 1  below. Just run `conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b` OR `conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-70b` 
 
 1. To use the API to make rest api calls to parsl. Activate any existing conda environment
