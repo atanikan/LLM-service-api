@@ -208,7 +208,7 @@ python parsl_service.py ~/anl_llama/13B/intel-extension-for-pytorch/examples/gpu
 5. You can do the same for 70B
 ```bash
 cd /LLM-service-api/parsl_service_70b
-python parsl_service.py /home/atanikanti/anl_llama/70B/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference/run_generation_with_deepspeed.py -m "/home/jmitche1/huggingface/llama2 --benchmark --input-tokens=1024 --max-new-tokens=128" --dtype float16 --ipex --greedy
+python parsl_service.py ~/anl_llama/70B/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference/run_generation_with_deepspeed.py -m "/home/jmitche1/huggingface/llama2 --benchmark --input-tokens=1024 --max-new-tokens=128" --dtype float16 --ipex --greedy
 ```
 
 :bulb: **Note:** The [config files](./parsl_service_13b/parsl_config.py) set the necessary configuration for codes to run on Sunspot on 12 tiles per node (6 GPUs)
