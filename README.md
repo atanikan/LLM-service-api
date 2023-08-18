@@ -174,9 +174,13 @@ export CCL_ATL_TRANSPORT=mpi # Required by Aurora mpich
 export FI_MR_CACHE_MONITOR=disabled # Required by Aurora mpich (HPCS-6501)
 export CCL_ZE_CACHE_OPEN_IPC_HANDLES_THRESHOLD=32768
 export I_MPI_ROOT=/opt/cray/pe/pals/1.2.12/bin/mpiexec
-module use -a /lus/gila/projects/Aurora_deployment/anl_llama/modulefiles
+module use -a /home/ftartagl/modulefiles
 module load oneapi-testing/2023.2.003.PUBLIC_IDP49422oneapi-testing/2023.2.003.PUBLIC_IDP49422
-source /lus/gila/projects/Aurora_deployment/anl_llama/env/vars.sh
+
+
+#source /lus/gila/projects/Aurora_deployment/anl_llama/env/vars.sh
+source /home/jmitche1/70Bccl/libraries.performance.communication.oneccl/build/_install/env/vars.sh
+
 #source activate anl_llma-70b
 conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-70b
 
