@@ -4,9 +4,13 @@ We have provided 3 options to run the Llama LLM on Sunspot - optimized by Intel 
 
 * 13B and 70B Llama LLM model using bash scripts on Sunspot
 * 13B and 70B Llama LLM model using Parsl
-* 13B and 70B Llama LLM model using REST API which wraps parsl from your laptop/desktop
+* 13B and 70B Llama LLM model using REST API which wraps parsl from your laptop/desktop (Work in Progress)
 
+# Table of Contents
+- [13B Quick Start](#13BQuickStart)
+- [70B Quick Start](#70BQuickStart)
 
+<a name="13BQuickStart"></a>
 ## 13B Llama2 Inference - Quick Start Guide
 
 1. SSH to sunspot
@@ -15,7 +19,8 @@ ssh -J username@bastion.alcf.anl.gov username@sunspot.alcf.anl.gov
 ```
 
 2. Sample submission script  
-Note: This requires just 1 GPU tiles to run
+:bulb: **Note:**  This requires only 1 tile to run
+You can find this script at: `/lus/gila/projects/Aurora_deployment/anl_llama/submit_scripts/submit_13b.sh`
 
 ```bash
 #!/bin/bash
@@ -53,6 +58,7 @@ qsub <foo.sh>
 
 Note: This uses a conda environment located at `/lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b`
 
+<a name="70BQuickStart"></a>
 ## 70B Llama2 Inference - Quick Start Guide
 1. SSH to sunspot
 ```
@@ -60,8 +66,8 @@ ssh -J username@bastion.alcf.anl.gov username@sunspot.alcf.anl.gov
 ```
 
 2. Sample submission script
-Note: This requires 2 GPUs (4 tiles) to run
-
+:bulb: **Note:**  This requires 2 GPUs (4 tiles) to run
+You can find this script at: `/lus/gila/projects/Aurora_deployment/anl_llama/submit_scripts/submit_70b.sh`
 
 ```bash
 #!/bin/bash
@@ -96,11 +102,10 @@ source /home/jmitche1/70Bccl/libraries.performance.communication.oneccl/build/_i
 
 source /soft/datascience/conda-2023-01-31/miniconda3/bin/activate
 
-#source activate anl_llma-70b
 conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-70b
 
 SRC_DIR=/lus/gila/projects/Aurora_deployment/anl_llama/70B/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference
-mpirun -np 4 ./$SRC_DIR/run_script.sh  python -u $SRC_DIR/run_generation_with_deepspeed.py -m $HF_HOME --benchmark --input-tokens=1024 --max-new-tokens=128 
+mpirun -np 4 $SRC_DIR/run_script.sh  python -u $SRC_DIR/run_generation_with_deepspeed.py -m $HF_HOME --benchmark --input-tokens=1024 --max-new-tokens=128 
 ```
 
 Next, submit the above script
@@ -111,7 +116,7 @@ qsub <foo.sh>
 Note: This uses a conda environment located at `/lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-70b`
 
 
-## Preliminaries 
+## Getting on Sunspot and setup 
 1. SSH to sunspot
 ```
 ssh -J username@bastion.alcf.anl.gov username@sunspot.alcf.anl.gov
@@ -125,7 +130,8 @@ export https_proxy=http://proxy.alcf.anl.gov:3128
 git config --global http.proxy http://proxy.alcf.anl.gov:3128
 ```
 
-3. The Llama2 Model files are located at `/lus/gila/projects/Aurora_deployment/anl_llama`. You can find a .tar.gz version at `/lus/gila/projects/Aurora_deployment/anl_llama.tar.gz`
+## Llama2 Model Weights and Related Files
+The Llama2 Model files are located at `/lus/gila/projects/Aurora_deployment/anl_llama`. You can find a .tar.gz version at `/lus/gila/projects/Aurora_deployment/anl_llama.tar.gz`
 You can copy it to a directory of your choice.
 
 ```bash
@@ -133,9 +139,9 @@ tar -xvf /lus/gila/projects/Aurora_deployment/anl_llama.tar.gz -C <path>
 ```
 
 
-## 13B and 70B Llama LLM model using bash scripts on Sunspot
+## 13B and 70B Llama Inferene using bash scripts on Sunspot
 
-### Building the environment for 13B model
+### Building a custom Conda environment for 13B model
 
 :bulb: **Note:** You can directly use the conda environment `/lus/gila/projects/Aurora_deployment/conda_env_llm` and skip conda setup steps 1-3 below. Just run `conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b`
 
@@ -170,7 +176,7 @@ pip install whls/torchaudio-2.0.2+31de77d-cp39-cp39-linux_x86_64.whl
 bash run_setup.sh
 ```
 
-### Running the 13B model
+### Running the 13B model with a custom conda environment
 
 1. To run 13B model. Use the appropriate environment created above `conda activate <path>/environments/anl_llma-13b`. The file should look similar to this
 
