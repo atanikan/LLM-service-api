@@ -1,41 +1,225 @@
-# Running Llama LLM
+# Running LLM on Sunspot
+We have provided 3 options to run the Llama LLM on Sunspot - optimized by Intel to run on PVC.
 
-## Running 13B Llama LLM
+* 13B and 70B Llama LLM model using bash scripts on Sunspot
+* 13B and 70B Llama LLM model using Parsl
+* 13B and 70B Llama LLM model using REST API which wraps parsl from your laptop/desktop
 
-* Running without workflow
+## Initial Setup
+1. SSH to sunspot
+```
+ssh -J username@bastion.alcf.anl.gov username@sunspot.alcf.anl.gov
+```
+2. Add the following to your ~/.bashrc and source it
+```
+export HTTP_PROXY=http://proxy.alcf.anl.gov:3128
+export HTTPS_PROXY=http://proxy.alcf.anl.gov:3128
+export http_proxy=http://proxy.alcf.anl.gov:3128
+export https_proxy=http://proxy.alcf.anl.gov:3128
+git config --global http.proxy http://proxy.alcf.anl.gov:3128
+```
+3. Either use a custom installation of miniconda or use the one here 
+`/soft/datascience/conda-2023-01-31/miniconda3/bin/conda`. To use it you'll need to first initialize your bash and source it.
+```bash
+/soft/datascience/conda-2023-01-31/miniconda3/bin/conda init bash
+```
+```
+source ~/.bashrc
 ```
 
+## 13B and 70B Llama LLM model using bash scripts on Sunspot
+
+### Running 13B model
+
+1. Unzip the Llama LLM model files tuned to work on Sunspot into your directory of choice. The file is available here `/lus/gila/projects/Aurora_deployment/anl_llama.tar.gz` 
+
+```bash
+tar -xzvf /lus/gila/projects/Aurora_deployment/anl_llama.tar.gz -C ~
+```
+2. Create a conda module and create an environment at a location of your choice. 
+
+```bash
+conda create --prefix ~/environments/anl_llma-13b python=3.9 --y
+conda activate ~/environments/anl_llma-13b
+cd ~/anl_llama/13B/
 ```
 
+3. Subsequently change the file `run_setup.sh` file by removing `conda create --name anl_llma-13b python=3.9 --y` and `source activate anl_llma-13b` lines
+from here `~/anl_llama/13B/run_setup.sh`. The file should now look as follows.
 
-
-
-
-## Run FASTAPI server
-1. To use the API to talk to parsl
-* Activate conda environment
+```bash
+conda install -y libstdcxx-ng=12 -c conda-forge
+conda install gperftools -c conda-forge
+conda install intel-openmp
+python -m pip install transformers==4.29.2 cpuid accelerate datasets sentencepiece protobuf==3.20.3
+module unload oneapi
+pip install -r py_requirements.txt
+pip install whls/torch-2.0.0a0+gite9ebda2-cp39-cp39-linux_x86_64.whl
+source /soft/compilers/oneapi/2023.05.15.001/oneapi/compiler/latest/env/vars.sh
+source /soft/compilers/oneapi/2023.05.15.001/oneapi/mkl/latest/env/vars.sh
+pip install -r ipex_requirements.txt
+pip install whls/intel_extension_for_pytorch-2.0.110.dev0+xpu.llm-cp39-cp39-linux_x86_64.whl
+pip install whls/torchvision-0.15.2a0+fa99a53-cp39-cp39-linux_x86_64.whl
+pip install -r audio_requirements.txt
+pip install whls/torchaudio-2.0.2+31de77d-cp39-cp39-linux_x86_64.whl
 ```
-conda activate /lus/gila/projects/Aurora_deployment/atanikanti/environments/restapi_anl_llama_env
+4. Now run the file
+```bash
+bash run_setup.sh
 ```
-* Run server
+
+5. To run 13B model. Change the Allocation as per need in the file `run_model.sh` and comment out the `$PATH` and `source activate` lines. Add the  `source ~/.bashrc` and `conda activate <path>/environments/anl_llma-13b`. The file should look similar to this
+
+```bash
+#!/bin/bash
+
+#PBS -A Aurora_deployment
+#PBS -q workq
+#PBS -l select=1
+#PBS -l walltime=30:00
+
+#export PATH=$HOME/anaconda3/bin:$PATH
+source ~/.bashrc
+export SYCL_PI_LEVEL_ZERO_USE_IMMEDIATE_COMMANDLISTS=1 
+export ENABLE_SDP_FUSION=1
+
+conda activate ~/environments/anl_llma-13b/
+#source activate anl_llma-13b
+
+source /soft/compilers/oneapi/2023.05.15.001/oneapi/compiler/latest/env/vars.sh
+source /soft/compilers/oneapi/2023.05.15.001/oneapi/mkl/latest/env/vars.sh
+
+
+cd $PBS_O_WORKDIR/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation
+
+python -u run_llama.py --device xpu --model-dir "/home/jmitche1/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy |& tee llam-13b.log
+
+#13B 1024 in 128 out
+#python -u run_llama.py --device xpu --model-dir "/home/jmitche1/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy  --input-tokens 1024 --max-new-tokens 128
 ```
-cd /lus/gila/projects/Aurora_deployment/atanikanti/rest_anl_llama
+6. Now run the file. The output should be in `run_model.sh.o<>` file. If needed, you can change prompt file found here `~/anl_llama/13B/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation/`
+```bash
+qsub run_model.sh
+```
+
+:bulb: **Note:** You can use `conda deactivate` to deactivate current conda environment
+
+### Running 70B model
+
+1. Similar to previous repeat the same steps by creating a new environment
+
+```bash
+conda create --prefix ~/environments/anl_llma-70b python=3.9 --y
+conda activate ~/environments/anl_llma-70b
+cd ~/anl_llama/70B/
+```
+
+2. Ensure the `run_setup.sh` looks similar to this and run `bash run_setup.sh`
+
+```bash
+#!/bin/bash
+export HTTP_PROXY=http://proxy.alcf.anl.gov:3128
+export HTTPS_PROXY=http://proxy.alcf.anl.gov:3128
+export http_proxy=http://proxy.alcf.anl.gov:3128
+export https_proxy=http://proxy.alcf.anl.gov:3128
+#conda create --name anl_llma-70b python=3.9 --y
+#source activate anl_llma-70b_test
+python -m pip install torch==2.0.1a0 -f https://developer.intel.com/ipex-whl-stable-xpu
+python -m pip install intel-extension-for-pytorch==2.0.110 -f https://developer.intel.com/ipex-whl-stable-xpu
+python -m pip install oneccl-bind-pt==2.0.100 -f https://developer.intel.com/ipex-whl-stable-xpu
+pip install transformers huggingface_hub mpi4py sentencepiece accelerate 
+git clone https://github.com/microsoft/DeepSpeed.git
+cd DeepSpeed
+git checkout 7f26bb6ae47c352efeabf52f827108c42a1a55eb
+pip install -r requirements/requirements.txt
+cd ..
+git clone https://github.com/intel/intel-extension-for-deepspeed.git
+git checkout aad672b49931f4a7e5516518703491e0849e324a
+cd intel-extension-for-deepspeed
+python setup.py develop
+cd ../DeepSpeed
+python setup.py develop
+```
+
+3. The `run_model.sh` should look similar to below and run `qsub run_model.sh`. Verify the full path to the conda environment in the script
+```bash
+#!/bin/bash
+#PBS -A Aurora_deployment
+#PBS -q workq
+#PBS -l select=1
+#PBS -l walltime=120:00
+#export PATH=$HOME/anaconda3/bin:$PATH
+source ~/.bashrc
+export HF_HOME=/home/jmitche1/huggingface/llama2
+export HF_DATASETS_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+export HF_EVALUATE_OFFLINE=1
+ 
+export SYCL_PI_LEVEL_ZERO_USE_IMMEDIATE_COMMANDLISTS=2
+export ENABLE_SDP_FUSION=1
+export COL_MAJOR=0
+
+export ZE_ENABLE_PCI_ID_DEVICE_ORDER=1
+export CCL_OP_SYNC=1
+export CCL_PROCESS_LAUNCHER=pmix
+export FI_PROVIDER=cxi
+export PALS_PMI=pmix
+export CCL_ATL_TRANSPORT=mpi # Required by Aurora mpich
+export FI_MR_CACHE_MONITOR=disabled # Required by Aurora mpich (HPCS-6501)
+export CCL_ZE_CACHE_OPEN_IPC_HANDLES_THRESHOLD=32768
+export I_MPI_ROOT=/opt/cray/pe/pals/1.2.12/bin/mpiexec
+module use -a /home/ftartagl/modulefiles
+module load oneapi-testing/2023.2.003.PUBLIC_IDP49422oneapi-testing/2023.2.003.PUBLIC_IDP49422
+source /home/jmitche1/70Bccl/libraries.performance.communication.oneccl/build/_install/env/vars.sh
+#source activate anl_llma-70b
+conda activate ~/environments/anl_llma-70b
+
+cd $PBS_O_WORKDIR/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference
+#mpirun -np 4 ./run_script.sh  python -u run_generation_with_deepspeed.py -m /home/jmitche1/huggingface/llama2 --benchmark --input-tokens=32 --max-new-tokens=32 |& tee llma-70-1.log
+mpirun -np 4 ./run_script.sh  python -u run_generation_with_deepspeed.py -m /home/jmitche1/huggingface/llama2 --benchmark --input-tokens=1024 --max-new-tokens=128 |& tee llma-70.log
+```
+
+## 13B and 70B Llama LLM model using Parsl
+1. We can use parsl to run the same script.
+2. Clone this repository. Ensure you have your the public key added to user token setup correctly in Github to be able to clone repository using ssh
+```bash
+git clone git@github.com:atanikan/LLM-service-api.git
+```
+3. If you have not already, follow the `run_setup.sh` steps (1-4) from the [Running 13B model](#running-13b-model) and steps(1-2) [Running 70B model](#running-70b-model) to create environments for the respective models. Now you install parsl in both the environments.
+
+```bash
+conda activate ~/environments/anl_llma-13b
+pip install parsl
+conda deactivate
+conda activate ~/environments/anl_llma-70b
+pip install parsl
+```
+4. Now to run the parsl script for 13B, head to `/LLM-service-api/parsl_service_13b` and run the following
+```bash
+cd /LLM-service-api/parsl_service_13b
+python parsl_service.py <replace_with_absolute_path>/anl_llama/13B/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation/run_llama.py --device xpu --model-dir "/home/jmitche1/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy
+```
+5. You can do the same for 70B
+```bash
+cd /LLM-service-api/parsl_service_70b
+python parsl_service.py <replace_with_absolute_path>/anl_llama/70B/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation/run_llama.py --device xpu --model-dir "/home/jmitche1/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy
+```
+
+:bulb: **Note:** The [config files](./parsl_service_13b/parsl_config.py) set the necessary configuration for codes to run on Sunspot on 12 tiles per node (6 GPUs)
+
+:bulb: **Note:** Ensure the "~" are pointing to the right location. if not home directory
+
+## Adding a RESTAPI calls to the model to achieve Inference as a service
+1. To use the API to make rest api calls to parsl. Activate any existing conda environment
+```bash
+conda activate ~/environments/anl_llma-13b
+pip install fastapi[all]
+```
+2. Run server
+```
+cd /LLM-service-api/parsl_service_13b
 uvicorn llm_api_parsl_server:app --reload
 ```
-2. To run the code directly on a compute node
-* Activate conda environment
-```
-conda activate /lus/gila/projects/Aurora_deployment/atanikanti/environments/restapi_anl_llama_env
-```
-* Run server
-```
-cd /lus/gila/projects/Aurora_deployment/atanikanti/rest_anl_llama
-uvicorn llm_api_server:app --reload
-```
-## 13B Model
-* To run parsl directly activate conda environment and 
-```
-python /lus/gila/projects/Aurora_deployment/atanikanti/rest_anl_llama/parsl_13b.py
-```
 
+3. SSH tunnel to the login node of sunspot and `localhost:8000/docs` will help you interact with parsl
 
