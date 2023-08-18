@@ -82,6 +82,7 @@ bash run_setup.sh
 
 #export PATH=$HOME/anaconda3/bin:$PATH
 source ~/.bashrc
+#export PATH=/soft/datascience/conda-2023-01-31/miniconda3/bin:$PATH
 export SYCL_PI_LEVEL_ZERO_USE_IMMEDIATE_COMMANDLISTS=1 
 export ENABLE_SDP_FUSION=1
 
@@ -92,9 +93,9 @@ source /soft/compilers/oneapi/2023.05.15.001/oneapi/compiler/latest/env/vars.sh
 source /soft/compilers/oneapi/2023.05.15.001/oneapi/mkl/latest/env/vars.sh
 
 
-cd $PBS_O_WORKDIR/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation
+cd /lus/gila/projects/Aurora_deployment/anl_llama/13B/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation
 
-python -u run_llama.py --device xpu --model-dir "/home/jmitche1/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy |& tee llam-13b.log
+python -u run_llama.py --device xpu --model-dir "/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy |& tee llam-13b.log
 
 #13B 1024 in 128 out
 #python -u run_llama.py --device xpu --model-dir "/home/jmitche1/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy  --input-tokens 1024 --max-new-tokens 128
@@ -154,7 +155,8 @@ python setup.py develop
 #PBS -l walltime=120:00
 #export PATH=$HOME/anaconda3/bin:$PATH
 source ~/.bashrc
-export HF_HOME=/home/jmitche1/huggingface/llama2
+#export PATH=/soft/datascience/conda-2023-01-31/miniconda3/bin:$PATH
+export HF_HOME=/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/huggingface/llama2
 export HF_DATASETS_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 export HF_EVALUATE_OFFLINE=1
@@ -172,15 +174,15 @@ export CCL_ATL_TRANSPORT=mpi # Required by Aurora mpich
 export FI_MR_CACHE_MONITOR=disabled # Required by Aurora mpich (HPCS-6501)
 export CCL_ZE_CACHE_OPEN_IPC_HANDLES_THRESHOLD=32768
 export I_MPI_ROOT=/opt/cray/pe/pals/1.2.12/bin/mpiexec
-module use -a /home/ftartagl/modulefiles
+module use -a /lus/gila/projects/Aurora_deployment/anl_llama/modulefiles
 module load oneapi-testing/2023.2.003.PUBLIC_IDP49422oneapi-testing/2023.2.003.PUBLIC_IDP49422
-source /home/jmitche1/70Bccl/libraries.performance.communication.oneccl/build/_install/env/vars.sh
+source /lus/gila/projects/Aurora_deployment/anl_llama/env/vars.sh
 #source activate anl_llma-70b
 conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-70b
 
-cd $PBS_O_WORKDIR/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference
+cd /lus/gila/projects/Aurora_deployment/anl_llama/70B/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference
 #mpirun -np 4 ./run_script.sh  python -u run_generation_with_deepspeed.py -m /home/jmitche1/huggingface/llama2 --benchmark --input-tokens=32 --max-new-tokens=32 |& tee llma-70-1.log
-mpirun -np 4 ./run_script.sh  python -u run_generation_with_deepspeed.py -m /home/jmitche1/huggingface/llama2 --benchmark --input-tokens=1024 --max-new-tokens=128 |& tee llma-70.log
+mpirun -np 4 ./run_script.sh  python -u run_generation_with_deepspeed.py -m /lus/gila/projects/Aurora_deployment/anl_llama/model_weights/huggingface/llama2 --benchmark --input-tokens=1024 --max-new-tokens=128 |& tee llma-70.log
 ```
 
 ## 13B and 70B Llama LLM model using Parsl
@@ -203,12 +205,12 @@ pip install parsl
 4. Now to run the parsl script for 13B, head to `/LLM-service-api/parsl_service_13b` and run the following
 ```bash
 cd /LLM-service-api/parsl_service_13b
-python parsl_service.py ~/anl_llama/13B/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation/run_llama.py --device xpu --model-dir "/home/jmitche1/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy
+python parsl_service.py ~/anl_llama/13B/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation/run_llama.py --device xpu --model-dir "/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy
 ```
 5. You can do the same for 70B
 ```bash
 cd /LLM-service-api/parsl_service_70b
-python parsl_service.py ~/anl_llama/70B/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference/run_generation_with_deepspeed.py -m "/home/jmitche1/huggingface/llama2 --benchmark --input-tokens=1024 --max-new-tokens=128" --dtype float16 --ipex --greedy
+python parsl_service.py ~/anl_llama/70B/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference/run_generation_with_deepspeed.py -m "/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/huggingface/llama2 --benchmark --input-tokens=1024 --max-new-tokens=128" --dtype float16 --ipex --greedy
 ```
 
 :bulb: **Note:** The [config files](./parsl_service_13b/parsl_config.py) set the necessary configuration for codes to run on Sunspot on 12 tiles per node (6 GPUs)
