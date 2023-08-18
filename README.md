@@ -14,7 +14,9 @@ We have provided 3 options to run the Llama LLM on Sunspot - optimized by Intel 
 ssh -J username@bastion.alcf.anl.gov username@sunspot.alcf.anl.gov
 ```
 
-2. Sample submission script   
+2. Sample submission script  
+Note: This requires just 1 GPU tiles to run
+
 ```bash
 #!/bin/bash
 
@@ -37,7 +39,7 @@ MODEL_DIR=/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/llma_mode
 SRC_PATH=/lus/gila/projects/Aurora_deployment/anl_llama/13B/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation
 
 #13B 32 in 32 out
-#python -u $SRC_PATH/run_llama.py --device xpu --model-dir "/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy
+#python -u $SRC_PATH/run_llama.py --device xpu --model-dir $MODEL_DIR --dtype float16 --ipex --greedy
 
 #13B 1024 in 128 out
 python -u $SRC_PATH/run_llama.py --device xpu --model-dir $MODEL_DIR --dtype float16 --ipex --greedy  --input-tokens 1024 --max-new-tokens 128
@@ -49,6 +51,7 @@ Next, submit the above script
 qsub <foo.sh>
 ```
 
+Note: This uses a conda environment located at `/lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b`
 
 ## 70B - Quick Start Guide
 1. SSH to sunspot
@@ -56,8 +59,60 @@ qsub <foo.sh>
 ssh -J username@bastion.alcf.anl.gov username@sunspot.alcf.anl.gov
 ```
 
+2. Sample submission script
+Note: This requires 2 GPUs (4 tiles) to run
 
-## Initial Setup
+
+```bash
+#!/bin/bash
+#PBS -A Aurora_deployment
+#PBS -q workq
+#PBS -l select=1
+#PBS -l walltime=120:00
+#export PATH=$HOME/anaconda3/bin:$PATH
+source ~/.bashrc
+#export PATH=/soft/datascience/conda-2023-01-31/miniconda3/bin:$PATH
+export HF_HOME=/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/huggingface/llama2
+export HF_DATASETS_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+export HF_EVALUATE_OFFLINE=1
+ 
+export SYCL_PI_LEVEL_ZERO_USE_IMMEDIATE_COMMANDLISTS=2
+export ENABLE_SDP_FUSION=1
+export COL_MAJOR=0
+
+export ZE_ENABLE_PCI_ID_DEVICE_ORDER=1
+export CCL_OP_SYNC=1
+export CCL_PROCESS_LAUNCHER=pmix
+export FI_PROVIDER=cxi
+export PALS_PMI=pmix
+export CCL_ATL_TRANSPORT=mpi # Required by Aurora mpich
+export FI_MR_CACHE_MONITOR=disabled # Required by Aurora mpich (HPCS-6501)
+export CCL_ZE_CACHE_OPEN_IPC_HANDLES_THRESHOLD=32768
+export I_MPI_ROOT=/opt/cray/pe/pals/1.2.12/bin/mpiexec
+module use -a /home/ftartagl/modulefiles
+module load oneapi-testing/2023.2.003.PUBLIC_IDP49422oneapi-testing/2023.2.003.PUBLIC_IDP49422
+
+
+#source /lus/gila/projects/Aurora_deployment/anl_llama/env/vars.sh
+source /home/jmitche1/70Bccl/libraries.performance.communication.oneccl/build/_install/env/vars.sh
+
+#source activate anl_llma-70b
+conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-70b
+
+cd /lus/gila/projects/Aurora_deployment/anl_llama/70B/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference
+mpirun -np 4 ./run_script.sh  python -u run_generation_with_deepspeed.py -m $HF_HOME --benchmark --input-tokens=1024 --max-new-tokens=128 |& tee llma-70.log
+```
+
+Next, submit the above script
+```bash
+qsub <foo.sh>
+```
+
+Note: This uses a conda environment located at `/lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-70b`
+
+
+## Preliminaries 
 1. SSH to sunspot
 ```
 ssh -J username@bastion.alcf.anl.gov username@sunspot.alcf.anl.gov
@@ -71,7 +126,8 @@ export https_proxy=http://proxy.alcf.anl.gov:3128
 git config --global http.proxy http://proxy.alcf.anl.gov:3128
 ```
 
-3. Unzip the Llama LLM model files tuned to work on Sunspot into your directory of choice. The file is available here `/lus/gila/projects/Aurora_deployment/anl_llama.tar.gz`. Alternatively we have an unzipped version here `/lus/gila/projects/Aurora_deployment/anl_llama`. You can copy it to a directory of your choice.
+3. The Llama2 Model files are located at `/lus/gila/projects/Aurora_deployment/anl_llama`. You can find a .tar.gz version at `/lus/gila/projects/Aurora_deployment/anl_llama.tar.gz`
+You can copy it to a directory of your choice.
 
 ```bash
 tar -xvf /lus/gila/projects/Aurora_deployment/anl_llama.tar.gz -C <path>
@@ -80,11 +136,11 @@ tar -xvf /lus/gila/projects/Aurora_deployment/anl_llama.tar.gz -C <path>
 
 ## 13B and 70B Llama LLM model using bash scripts on Sunspot
 
-### Running 13B model
+### Building the environment for 13B model
 
 :bulb: **Note:** You can directly use the conda environment `/lus/gila/projects/Aurora_deployment/conda_env_llm` and skip conda setup steps 1-3 below. Just run `conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b`
 
-1. Create a conda module and create an environment at a location of your choice. 
+1. Create a conda module and create an environment at a location of your choice. This can be done on a login node on sunspot
 
 ```bash
 conda create --prefix ~/environments/anl_llma-13b python=3.9 --y
@@ -115,7 +171,9 @@ pip install whls/torchaudio-2.0.2+31de77d-cp39-cp39-linux_x86_64.whl
 bash run_setup.sh
 ```
 
-4. To run 13B model. Change the Allocation as per need in the file `~/anl_llama/13B/run_model.sh` and comment out the `$PATH` and `source activate` lines. Add the  `source ~/.bashrc` and `conda activate <path>/environments/anl_llma-13b`. The file should look similar to this
+### Running the 13B model
+
+1. To run 13B model. Use the appropriate environment created above `conda activate <path>/environments/anl_llma-13b`. The file should look similar to this
 
 ```bash
 #!/bin/bash
@@ -126,13 +184,16 @@ bash run_setup.sh
 #PBS -l walltime=30:00
 
 #export PATH=$HOME/anaconda3/bin:$PATH
-source ~/.bashrc
+
 #export PATH=/soft/datascience/conda-2023-01-31/miniconda3/bin:$PATH
 export SYCL_PI_LEVEL_ZERO_USE_IMMEDIATE_COMMANDLISTS=1 
 export ENABLE_SDP_FUSION=1
 
+
+source /soft/datascience/conda-2023-01-31/miniconda3/bin/activate
+#Replace with appropriate environment
 conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b
-#source activate anl_llma-13b
+
 
 source /soft/compilers/oneapi/2023.05.15.001/oneapi/compiler/latest/env/vars.sh
 source /soft/compilers/oneapi/2023.05.15.001/oneapi/mkl/latest/env/vars.sh
@@ -145,7 +206,7 @@ python -u run_llama.py --device xpu --model-dir "/lus/gila/projects/Aurora_deplo
 #13B 1024 in 128 out
 #python -u run_llama.py --device xpu --model-dir "/home/jmitche1/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy  --input-tokens 1024 --max-new-tokens 128
 ```
-5. Now run the file. The output should be in `run_model.sh.o<>` file. If needed, you can change prompt file found here `~/anl_llama/13B/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation/`
+2. Now run the file. The output should be in `run_model.sh.o<>` file. If needed, you can change prompt file found here `~/anl_llama/13B/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation/`
 ```bash
 qsub run_model.sh
 ```
