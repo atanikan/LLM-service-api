@@ -53,7 +53,7 @@ qsub <foo.sh>
 
 Note: This uses a conda environment located at `/lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b`
 
-## 70B - Quick Start Guide
+## 70B Llama2 Inference - Quick Start Guide
 1. SSH to sunspot
 ```
 ssh -J username@bastion.alcf.anl.gov username@sunspot.alcf.anl.gov
@@ -69,9 +69,7 @@ Note: This requires 2 GPUs (4 tiles) to run
 #PBS -q workq
 #PBS -l select=1
 #PBS -l walltime=120:00
-#export PATH=$HOME/anaconda3/bin:$PATH
-source ~/.bashrc
-#export PATH=/soft/datascience/conda-2023-01-31/miniconda3/bin:$PATH
+
 export HF_HOME=/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/huggingface/llama2
 export HF_DATASETS_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
@@ -91,17 +89,18 @@ export FI_MR_CACHE_MONITOR=disabled # Required by Aurora mpich (HPCS-6501)
 export CCL_ZE_CACHE_OPEN_IPC_HANDLES_THRESHOLD=32768
 export I_MPI_ROOT=/opt/cray/pe/pals/1.2.12/bin/mpiexec
 module use -a /home/ftartagl/modulefiles
-module load oneapi-testing/2023.2.003.PUBLIC_IDP49422oneapi-testing/2023.2.003.PUBLIC_IDP49422
+module unload oneapi
+module load oneapi-testing/2023.2.003.PUBLIC_IDP49422
 
-
-#source /lus/gila/projects/Aurora_deployment/anl_llama/env/vars.sh
 source /home/jmitche1/70Bccl/libraries.performance.communication.oneccl/build/_install/env/vars.sh
+
+source /soft/datascience/conda-2023-01-31/miniconda3/bin/activate
 
 #source activate anl_llma-70b
 conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-70b
 
-cd /lus/gila/projects/Aurora_deployment/anl_llama/70B/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference
-mpirun -np 4 ./run_script.sh  python -u run_generation_with_deepspeed.py -m $HF_HOME --benchmark --input-tokens=1024 --max-new-tokens=128 |& tee llma-70.log
+SRC_DIR=/lus/gila/projects/Aurora_deployment/anl_llama/70B/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference
+mpirun -np 4 ./$SRC_DIR/run_script.sh  python -u $SRC_DIR/run_generation_with_deepspeed.py -m $HF_HOME --benchmark --input-tokens=1024 --max-new-tokens=128 
 ```
 
 Next, submit the above script
