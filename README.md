@@ -321,6 +321,7 @@ We can use parsl to run the same script we used
 
 2. Using the pre-built conda environments
    On the login node:
+
    *For 13B* 
    ```bash
    source /soft/datascience/conda-2023-01-31/miniconda3/bin/activate
