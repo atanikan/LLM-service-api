@@ -312,7 +312,7 @@ mpirun -np 4 ./run_script.sh  python -u run_generation_with_deepspeed.py -m /lus
 
 <a name="Inference_with_Parsl"></a>
 ## Inference with Parsl - 13B and 70B Llama Inference
-We can use parsl to run the same script we used
+We can use parsl to run the inference using the python script 
 
 1. Clone this repository. Ensure you have your the public key added to user token setup correctly in Github to be able to clone repository using ssh
 ```bash
