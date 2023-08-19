@@ -13,7 +13,7 @@ We have provided 3 options to run the Llama LLM on Sunspot - optimized by Intel 
 - [Sunspot](#Sunspot)
 - [Building a custom 13B conda environment](#13BBuildingEnvironments)
 - [Building a custom 70B conda environment](#70BBuildingEnvironments)
-- [Inference with Parsl - WIP](#Inference_with_Parsl)
+- [Inference with Parsl](#Inference_with_Parsl)
 - [Restful Inference Service - WIP](#Restful_Inference_Service)
 
 <a name="13BQuickStart"></a>
@@ -311,15 +311,42 @@ mpirun -np 4 ./run_script.sh  python -u run_generation_with_deepspeed.py -m /lus
 ```
 
 <a name="Inference_with_Parsl"></a>
-## 13B and 70B Llama Inferene using Parsl
-1. We can use parsl to run the same script.
-2. Clone this repository. Ensure you have your the public key added to user token setup correctly in Github to be able to clone repository using ssh
-```bash
-git clone git@github.com:atanikan/LLM-service-api.git
-```
-:bulb: **Note:** You can directly use the conda environment `/lus/gila/projects/Aurora_deployment/conda_env_llm` and skip conda setup step 3  below. Just run `conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b` and later `conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-70b` 
+## Inference with Parals - 13B and 70B Llama Inference
+We can use parsl to run the same script we used
 
-3. If you have not already, follow the `run_setup.sh` steps (1-4) from the [Running 13B model](#running-13b-model) and steps(1-2) [Running 70B model](#running-70b-model) to create environments for the respective models. Now you install parsl in both the environments.
+1. Clone this repository. Ensure you have your the public key added to user token setup correctly in Github to be able to clone repository using ssh
+```bash
+ git clone https://github.com/atanikan/LLM-service-api.git
+```
+
+2. Using the pre-built conda environments
+   On the login node:
+   *For 13B* 
+   ```bash
+   source /soft/datascience/conda-2023-01-31/miniconda3/bin/activate
+   conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b
+   ```
+   *For 70B* 
+   ```bash
+   source /soft/datascience/conda-2023-01-31/miniconda3/bin/activate
+   conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-70b
+   ```
+
+
+3. Now to run the parsl script for 13B, head to `LLM-service-api/parsl_service_13b` and run the following on a login node
+```bash
+cd LLM-service-api/parsl_service_13b
+python parsl_service.py /lus/gila/projects/Aurora_deployment/anl_llama/13B/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation/run_llama.py --device xpu --model-dir "/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy
+```
+4. You can do the same for 70B
+```bash
+cd LLM-service-api/parsl_service_70b
+python parsl_service.py /lus/gila/projects/Aurora_deployment/anl_llama/70B/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference/run_generation_with_deepspeed.py -m "/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/huggingface/llama2 --benchmark --input-tokens=1024 --max-new-tokens=128" --dtype float16 --ipex --greedy
+```
+
+:bulb: **Note:** The [config files](./parsl_service_13b/parsl_config.py) set the necessary configuration for codes to run on Sunspot on 12 tiles per node (6 GPUs)
+
+**Note** If you don't have parsl in your custom environment, you can install parsl as follows.
 
 ```bash
 conda activate ~/environments/anl_llma-13b
@@ -328,20 +355,6 @@ conda deactivate
 conda activate ~/environments/anl_llma-70b
 pip install parsl
 ```
-4. Now to run the parsl script for 13B, head to `/LLM-service-api/parsl_service_13b` and run the following
-```bash
-cd /LLM-service-api/parsl_service_13b
-python parsl_service.py ~/anl_llama/13B/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation/run_llama.py --device xpu --model-dir "/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/llma_models/llma-2-convert13B" --dtype float16 --ipex --greedy
-```
-5. You can do the same for 70B
-```bash
-cd /LLM-service-api/parsl_service_70b
-python parsl_service.py ~/anl_llama/70B/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference/run_generation_with_deepspeed.py -m "/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/huggingface/llama2 --benchmark --input-tokens=1024 --max-new-tokens=128" --dtype float16 --ipex --greedy
-```
-
-:bulb: **Note:** The [config files](./parsl_service_13b/parsl_config.py) set the necessary configuration for codes to run on Sunspot on 12 tiles per node (6 GPUs)
-
-:bulb: **Note:** Ensure the "~" are pointing to the right location. if not home directory
 
 <a name="Restful_Inference_Service"></a>
 ## Adding a RESTAPI calls to the model to achieve Inference as a service (Work In Progress)
