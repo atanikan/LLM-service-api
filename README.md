@@ -13,7 +13,7 @@ We have provided 3 options to run the Llama LLM on Sunspot - optimized by Intel 
 - [Sunspot](#Sunspot)
 - [Building a custom 13B conda environment](#13BBuildingEnvironments)
 - [Building a custom 70B conda environment](#70BBuildingEnvironments)
-- [Inference with Parsl](#Inference_with_Parsl)
+- [Inference with Parsl - WIP](#Inference_with_Parsl)
 - [Restful Inference Service - WIP](#Restful_Inference_Service)
 
 <a name="13BQuickStart"></a>
