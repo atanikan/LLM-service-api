@@ -382,7 +382,7 @@ uvicorn LLM_service_api:app --reload
 
 This approach will deploy infrence tasks to a Globus Compute endpoint.
 
-# Set-up Endpoint
+### Set-up Endpoint
 
 1. In a conda or virtual environment on Sunspot, install the necessary packages to run Globus Compute:
 ```
@@ -391,9 +391,9 @@ pip install globus-compute-sdk globus-compute-endpoint
 
 2. It is necessary to hack your installation of `globus-compute-endpoint` to tell the endpoint process to communicate through a local port of your choosing, rather than attempting a TCP connection itself.
 
-In your environment, look for the `endpoint.py` file in the endpoint code.  For example, in a local `miniconda` installation that has an environment called `anl_llma-13b` it would be here:
+In your environment, look for the `endpoint.py` file in your installation's `globus_compute_endpoint/endpoint` directory.  For example, in a local `miniconda` installation that has an environment called `anl_llma-13b` it would be here:
 ```
-~/miniconda3/envs/my-demo-env/lib/python3.9/site-packages/globus_compute_endpoint/endpoint/endpoint.py
+~/miniconda3/envs/anl_llma-13b/lib/python3.9/site-packages/globus_compute_endpoint/endpoint/endpoint.py
 ```
 
 In this file, look for the routine `start_endpoint`.  Within this routine look for the creation of an object called `reg_info`.  This object contains the endpoint registration info that needs to be edited.  Directly below `reg_info` paste the following code:
@@ -429,9 +429,9 @@ Note the use of `localhost:50000`; this is the local port on the sunspot login n
 
 3. Configure your endpoint.  
 
-At the path `~/.globus_compute/<ENDPOINT_NAME>` there is a file called `config.yaml`.  We want to replace that file with a, there is a sample endpoint config file.  
+At the path `~/.globus_compute/<ENDPOINT_NAME>` there is a file called `config.yaml`.  We want to replace that file with a config file similar to the sample file [config.yaml](funcx/config.yaml).  
 
-# Set-up tunnel
+### Set-up tunnel
 
 1. On your local machine, install [`stunnel`](https://www.stunnel.org).  If you have `homebrew` on your local machine, you can use it to install:
 ```
