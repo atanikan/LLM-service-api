@@ -378,3 +378,102 @@ ssh -L 8000:127.0.0.1:8000 -J username@bastion.alcf.anl.gov username@sunspot
 cd /LLM-service-api
 uvicorn LLM_service_api:app --reload
 ```
+## Deploying the model through Globus Compute Endpoint to achieve Inference as a service (Work In Progress)
+
+This approach will deploy infrence tasks to a Globus Compute endpoint.
+
+# Set-up Endpoint
+
+1. In a conda or virtual environment on Sunspot, install the necessary packages to run Globus Compute:
+```
+pip install globus-compute-sdk globus-compute-endpoint
+```
+
+2. It is necessary to hack your installation of `globus-compute-endpoint` to tell the endpoint process to communicate through a local port of your choosing, rather than attempting a TCP connection itself.
+
+In your environment, look for the `endpoint.py` file in the endpoint code.  For example, in a local `miniconda` installation that has an environment called `anl_llma-13b` it would be here:
+```
+~/miniconda3/envs/my-demo-env/lib/python3.9/site-packages/globus_compute_endpoint/endpoint/endpoint.py
+```
+
+In this file, look for the routine `start_endpoint`.  Within this routine look for the creation of an object called `reg_info`.  This object contains the endpoint registration info that needs to be edited.  Directly below `reg_info` paste the following code:
+```
+		# This reg_info object should be around line 357
+       		reg_info = fx_client.register_endpoint(
+                    endpoint_dir.name,
+                    endpoint_uuid,
+                    metadata=Endpoint.get_metadata(endpoint_config),
+                    multi_tenant=False,
+                    display_name=endpoint_config.display_name,
+                )
+
+		# Add this code
+		log.info(f"reg_info: {reg_info}")
+                
+                def _use_my_stunnel(q_info):
+                    q_info["connection_url"] = (
+                        q_info["connection_url"]
+                        .replace("@amqps.funcx.org", "@localhost:50000")
+                        .replace("amqps://", "amqp://")
+                    )
+
+		_use_my_stunnel(reg_info["task_queue_info"])
+                _use_my_stunnel(reg_info["result_queue_info"])
+
+		log.info(f"reg_info: {reg_info}")
+		# End of added code block
+
+```
+
+Note the use of `localhost:50000`; this is the local port on the sunspot login node that the endpoint process will look to connect through.  That port number will be necessary in later steps of making the tunnel.  If port `50000` is unavailable for some reason, another similarly high numbered port should work, but you must replace `50000` with that port number everywhere in these instructions.
+
+3. Configure your endpoint.  
+
+At the path `~/.globus_compute/<ENDPOINT_NAME>` there is a file called `config.yaml`.  We want to replace that file with a, there is a sample endpoint config file.  
+
+# Set-up tunnel
+
+1. On your local machine, install [`stunnel`](https://www.stunnel.org).  If you have `homebrew` on your local machine, you can use it to install:
+```
+brew update
+brew install stunnel
+```
+
+2. Also on your local machine, create an `stunnel` configuration file.  Save it to a path of your choice `/path/to/stunnel.conf`.  The file will look like this:
+```
+pid = /tmp/stunnel.pid # you can set this to any path of your choice
+output = /tmp/stunnel.log # you can set this to any path of your choice
+foreground = no # if you want the connection to run in your shell, set this to yes
+
+debug = 7
+
+[amqp]
+client = yes
+accept = 127.0.0.1:15672 # this port can be anything of your choice
+connect = amqps.funcx.org:5671 # this address and port must remain fixed
+
+```
+
+3. Start stunnel connection:
+```
+stunnel /path/to/stunnel.conf
+```
+If you have set foreground to `no` in `stunnel.conf` it will run in a daemon process in the background; if you set it to `yes`, it will run in the shell.
+
+4. Now create a tunnel from your local machine to a sunspot login node.
+```
+ssh -R 15672:localhost:15672 bastion.alcf.anl.gov
+ssh -R 50000:localhost:15672 sunspot.alcf.anl.gov
+```
+
+5. You should be in a shell on a sunspot login node that has a connection to the Globus Compute `amqps` service.  Now start the endpoint process:
+```
+globus-compute-endpoint start <ENDPOINT_NAME>
+```
+
+You will also need the endpoint UUID for setting up your compute tasks.  You can find it with the command:
+```
+globus-compute-endpoint	list
+```
+
+
