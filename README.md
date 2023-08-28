@@ -15,6 +15,7 @@ We have provided 3 options to run the Llama LLM on Sunspot - optimized by Intel 
 - [Building a custom 70B conda environment](#70BBuildingEnvironments)
 - [Inference with Parsl](#Inference_with_Parsl)
 - [Restful Inference Service - WIP](#Restful_Inference_Service)
+- [Globus Compute/FuncX Service](#funcX)
 
 <a name="13BQuickStart"></a>
 ## 13B Llama2 Inference - Quick Start Guide
@@ -378,11 +379,23 @@ ssh -L 8000:127.0.0.1:8000 -J username@bastion.alcf.anl.gov username@sunspot
 cd /LLM-service-api
 uvicorn LLM_service_api:app --reload
 ```
+
+<a name="FuncX"></a>
 ## Deploying the model through Globus Compute Endpoint to achieve Inference as a service (Work In Progress)
 
 This approach will deploy infrence tasks to a Globus Compute endpoint.
 
-### Set-up Endpoint
+### Set-up Environment
+
+To use the pre-built conda environments on the login node, do this:
+
+   *For 13B* 
+   ```bash
+   source /soft/datascience/conda-2023-01-31/miniconda3/bin/activate
+   conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b
+   ```
+
+To build your own environment (instead of using the pre-built one) follow these steps:
 
 1. In a conda or virtual environment on Sunspot, install the necessary packages to run Globus Compute:
 ```
@@ -427,9 +440,15 @@ In this file, look for the routine `start_endpoint`.  Within this routine look f
 
 Note the use of `localhost:50000`; this is the local port on the sunspot login node that the endpoint process will look to connect through.  That port number will be necessary in later steps of making the tunnel.  If port `50000` is unavailable for some reason, another similarly high numbered port should work, but you must replace `50000` with that port number everywhere in these instructions.
 
-3. Configure your endpoint.  
+### Configure Endpoint
 
-At the path `~/.globus_compute/<ENDPOINT_NAME>` there is a file called `config.yaml`.  We want to replace that file with a config file similar to the sample file [config.yaml](funcx/config.yaml).  
+On a Sunspot login node do the following:
+
+1. Clone this repo.
+
+2. On Sunspot, at the path `~/.globus_compute/<ENDPOINT_NAME>` there is a file called `config.yaml`.  We want to replace that file with a config file similar to the sample file [config.yaml](funcx_servic_13b/config.yaml).  
+
+In the sample `config.yaml` file provided, replace your `account` and `worker_init` script path and copy it to `~/.globus_compute/<ENDPOINT_NAME>`.  The `worker_init` command should point to the script [worker_init.sh](funcx_service_13b/worker_init.sh).
 
 ### Set-up tunnel
 
@@ -475,5 +494,55 @@ You will also need the endpoint UUID for setting up your compute tasks.  You can
 ```
 globus-compute-endpoint	list
 ```
+Copy and save the UUID of the endpoint.  
 
+Note, anytime you want to make changes to the endpoint config, you must restart the endpoint:
+```
+globus-compute-endpoint restart <ENDPOINT_NAME>
+```
+
+### Run the 13b model with funcX
+
+Return to a shell on your local machine (or any machine with a `http_proxy`, you can also do this part from a Sunspot node too).
+
+1. Clone this repo.
+
+2. In a local conda or python virtual environment, install the globus module:
+```
+pip install globus-compute-sdk
+```
+
+2. Go to `LLM-service-api/funcx_service_13b`.
+
+3. Register the function with the globus service.  You will be asked to validate your credentials with the globus service:
+```
+python register_function.py
+```
+This routine will print the function id.  Copy and save this.
+
+4. Edit `run_batch.py` in this directory.  Replace the `sunspot_endpoint` and `function_id` with the UUIDs from previous steps.
+
+5. Run `run_batch.py`:
+```
+python run_batch.py /lus/gila/projects/Aurora_deployment/anl_llama/13B/intel-extension-for-pytorch/examples/gpu/inference/python/llm/text-generation/run_llama.py --device xpu --model-dir /lus/gila/projects/Aurora_deployment/anl_llama/model_weights/llma_models/llma-2-convert13B --dtype float16 --ipex --greedy
+```
+
+6. Inspect outputs.  The function outputs will be returned locally to where you are running `run_batch.py` in a directory `outputs/<RANDOM_UUID>/<i>/`.
+```
+cat ./outputs/<RANDOM_UUID>/*/llama.stdout
+```
+
+### Clean-up
+
+- Endpoint: Stop the endpoint with 
+```
+globus-compute-endpoint stop <ENDPOINT_NAME>
+```
+
+- Tunnels: To close the ssh tunnels from your local machine to Sunspot, exit out of the ssh sessions you have opened in your shell.
+
+    On your local machine, stop the stunnel connection with:
+```
+kill 'cat /tmp/stunnel.pid'
+```
 
