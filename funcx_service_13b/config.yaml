@@ -1,0 +1,45 @@
+engine:
+
+    # This engine uses the HighThroughputExecutor
+    type: GlobusComputeEngine
+
+    #available_accelerators: ["0,1","2,3","4,5"] # 2 GPUs per worker
+    available_accelerators: ["0.0","0.1","1.0","1.1","2.0","2.1","3.0","3.1","4.0","4.1","5.0","5.1"] # one tile per worker
+    cpu_affinity: block  # Assigns cpus in sequential order                                                                    
+    prefetch_capacity: 0  # Increase if you have many more tasks than workers                                                    
+    cores_per_worker: 16 # Number of cpu threads per worker
+
+    strategy:
+        type: SimpleStrategy
+        max_idletime: 300
+
+    address:
+        type: address_by_interface
+        ifname: bond0
+
+    provider:
+        type: PBSProProvider
+
+        launcher:
+            type: MpiExecLauncher
+            # Ensures 1 manger per node, work on all 64 cores
+            bind_cmd: --cpu-bind
+            overrides: --depth=208 --ppn 1
+
+        account: Aurora_deployment
+        queue: workq
+        cpus_per_node: 208
+        select_options: "system=sunspot,place=scatter"
+
+        # e.g., "#PBS -l filesystems=home:grand:eagle\n#PBS -k doe"
+        # scheduler_options: "#PBS -l filesystems=home:grand:eagle"
+
+        # Node setup: activate necessary conda environment and such
+        worker_init: source /home/csimpson/LLM-service-api/funcx_service_13b/worker_init.sh
+
+        walltime: 00:15:00
+        nodes_per_block: 1 # Increase this to increase the number of nodes per job
+        init_blocks: 0
+        min_blocks: 0
+        max_blocks: 1 # Increase this to increase the number of jobs in the workflow
+
