@@ -1,8 +1,12 @@
 engine:
-    type: HighThroughputEngine
+    type: GlobusComputeEngine
 
     # Each worker has access to one tile
     available_accelerators: ["0.0","0.1","1.0","1.1","2.0","2.1","3.0","3.1","4.0","4.1","5.0","5.1"]
+    cpu_affinity: block  # Assigns cpus in sequential order                                                                 
+    prefetch_capacity: 0  # Increase if you have many more tasks than workers                                                    
+    cores_per_worker: 16 # How many workers per core dictates total workers per node    
+
 
     strategy:
         type: SimpleStrategy
@@ -27,9 +31,9 @@ engine:
         select_options: "system=sunspot,place=scatter"
 
         # Node setup: activate necessary conda environment and such
-        worker_init: ". /home/csimpson/miniconda3/etc/profile.d/conda.sh; conda activate my-demo-env"
+        worker_init: "$HOME/LLM-service-api/funcx_service_13b/worker_init.sh"
 
-        walltime: 00:60:00 
+        walltime: 00:15:00 
         nodes_per_block: 1 # This is the number of nodes in a batch job that the endpoint will submit 
         init_blocks: 0
         min_blocks: 0 # This is the minimum number of batch jobs the endpoint will run; as it is set to 0, it will not submit any batch jobs until it has work.
