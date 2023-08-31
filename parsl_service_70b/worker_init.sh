@@ -15,7 +15,6 @@ export FI_MR_CACHE_MONITOR=disabled
 export CCL_ZE_CACHE_OPEN_IPC_HANDLES_THRESHOLD=32768
 export I_MPI_ROOT=/opt/cray/pe/pals/1.2.12/bin/mpiexec
 module use -a /home/ftartagl/modulefiles
-module unload oneapi
 module load oneapi-testing/2023.2.003.PUBLIC_IDP49422oneapi-testing/2023.2.003.PUBLIC_IDP49422
 source /home/jmitche1/70Bccl/libraries.performance.communication.oneccl/build/_install/env/vars.sh
 source /soft/datascience/conda-2023-01-31/miniconda3/bin/activate

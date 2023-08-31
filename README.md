@@ -343,10 +343,10 @@ python parsl_service.py /lus/gila/projects/Aurora_deployment/anl_llama/13B/intel
 4. You can do the same for 70B
 ```bash
 cd LLM-service-api/parsl_service_70b
-python parsl_service.py /lus/gila/projects/Aurora_deployment/anl_llama/70B/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference/run_generation_with_deepspeed.py -m "/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/huggingface/llama2 --benchmark --input-tokens=1024 --max-new-tokens=128" --dtype float16 --ipex --greedy
+python parsl_service.py /lus/gila/projects/Aurora_deployment/anl_llama/70B/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference/run_generation_with_deepspeed.py -m "/lus/gila/projects/Aurora_deployment/anl_llama/model_weights/huggingface/llama2" --benchmark --input-tokens=1024 --max-new-tokens=128 --dtype float16
 ```
 
-:bulb: **Note:** The [config files](./parsl_service_13b/parsl_config.py) set the necessary configuration for codes to run on Sunspot on 12 tiles per node (6 GPUs)
+:bulb: **Note:** The 13B [config files](./parsl_service_13b/parsl_config.py) set the necessary configuration for codes to run on Sunspot on 12 tiles per node (6 GPUs). The 70B is set to run 3 instance on 4 tiles (2 GPUs) each [config files](./parsl_service_70b/parsl_config.py)
 
 **Note** If you don't have parsl in your custom environment, you can install parsl as follows.
 
@@ -359,26 +359,30 @@ pip install parsl
 ```
 
 <a name="Restful_Inference_Service"></a>
-## Adding a RESTAPI calls to the model to achieve Inference as a service (Work In Progress)
-:bulb: **Note:** You can directly use the conda environment `/lus/gila/projects/Aurora_deployment/conda_env_llm` and skip conda setup step 1  below. Just run `conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b` OR `conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-70b` 
+## Adding a RESTAPI calls to Parsl workflow codes in order to run the model to achieve Inference as a service.
+ 
 
-1. To use the API to make rest api calls to parsl. Activate any existing conda environment
+1. SSH tunnel to the login node of sunspot.
 ```bash
-conda activate ~/environments/anl_llma-13b
-pip install fastapi[all]
+ssh -L 8000:127.0.0.1:8000 -J username@bastion.alcf.anl.gov username@sunspot.alcf.anl.gov
 ```
 
-2. SSH tunnel to the login node of sunspot and `localhost:8000/docs` will help you interact with parsl
-
+2. To use the API to make rest api calls to parsl. Activate any existing conda environment. Using the pre-built conda environments on the login node. You can alternatively install fastapi in your custom environment by running `pip install fastapi[all]`
 ```bash
-ssh -L 8000:127.0.0.1:8000 -J username@bastion.alcf.anl.gov username@sunspot
+source /soft/datascience/conda-2023-01-31/miniconda3/bin/activate
+conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b
 ```
 
-3. Run server
+3. Clone the repository and run server
 ```
+git clone https://github.com/atanikan/LLM-service-api.git
 cd /LLM-service-api
 uvicorn LLM_service_api:app --reload
 ```
+
+In your local browser you can head to [localhost/docs](http://localhost:8000/docs) and find two POST rest api methods run-llama/13b and run-llama/70b. For either, click on Post, Try it out, followed by Execute to run respective parsl workflows. You can change prompt to try custom prompts and modify runs as needed.
+
+**Note** Sometimes on Sunspot the job runs on a dead node and does not produce output. Check folders model_70B_* and runinfo, and terminate jobs if no output is recorded in the logs.
 
 <a name="FuncX"></a>
 ## Deploying the model through Globus Compute Endpoint to achieve Inference as a service (Work In Progress)

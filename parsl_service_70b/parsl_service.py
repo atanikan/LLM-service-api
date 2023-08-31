@@ -7,17 +7,16 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from parsl_config import sunspot_config
 
 
-BATCH_SIZE=1
-
+BATCH_SIZE=3 # Runs 3 instances of the code on 4 tiles each
 @bash_app
-def call_model_70b (command, stdout='model70b.stdout', stderr='model70b.stderr'):
-    return f"echo 'Running on tile with affinity ZE_AFFINITY_MASK={os.getenv('ZE_AFFINITY_MASK')}';\
-     mpirun -np 1 {os.path.dirname(command[0])}/run_script.sh python {command[0]} {' '.join(command[1:])}"
+def call_model_70b (i, command, stdout='model70b.stdout', stderr='model70b.stderr'):
+    return f"echo 'Running 70B instance on tiles with affinity ZE_AFFINITY_MASK={os.getenv('ZE_AFFINITY_MASK')}';\
+    mpirun -np 4 {os.path.dirname(command[0])}/run_script.sh python {command[0]} {' '.join(command[1:])} --master-port {int('29600')+i}"
 
 def run_code(command,output_dir):
     tasks = []
     for i in range(BATCH_SIZE):
-        tasks.append(call_model_70b(command, stdout=output_dir+f"{i}/job.out", 
+        tasks.append(call_model_70b(i, command, stdout=output_dir+f"{i}/job.out", 
                                 stderr=output_dir+f"{i}/job.stderr"))        
     for t in tasks:
         t.result()
@@ -48,7 +47,6 @@ def main(command):
     print(">",command,output_dir)   
     run_code(command, output_dir)
     fetch_output(output_dir)
-    #fetch_errors(output_dir)
 
 if __name__ == "__main__":
     #command = ['~/anl_llama/70B/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/inference/run_generation_with_deepspeed.py', '-m', '/home/jmitche1/huggingface/llama2', '--benchmark', '--input-tokens=1024', '--max-new-tokens=128']

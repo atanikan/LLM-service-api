@@ -20,23 +20,20 @@ user_opts = {
     "walltime":         "00:60:00",
     "run_dir":          f"{os.path.dirname(os.path.abspath(__file__))}/runinfo",
     "nodes_per_block":  1, # think of a block as one job on sunspot
-    "cpus_per_node":    208, # this is the number of threads available on one sunspot node
+    #"cpus_per_node":    208,
     "strategy":         "simple",
 }
 
 # Set the name of accelerators.  We will treat each tile as an accelerator (12 total)  
 accel_ids=[]
-for gid in range(6):
-    for tid in range(2):
-        accel_ids.append(f"{gid}.{tid}")
-
+accel_gpus = ["0.0,0.1,1.0,1.1","2.0,2.1,3.0,3.1","4.0,4.1,5.0,5.1"] # 4 tiles (2 GPUs) for each run
 sunspot_config = Config(
     run_dir=user_opts["run_dir"],
     retries=2,
     executors=[
         HighThroughputExecutor(
             label="sunspot_llm_70b",
-            available_accelerators=accel_ids,  # Ensures one worker per accelerator
+            available_accelerators=accel_gpus,  # Ensures one worker per accelerator
             address=address_by_interface("bond0"),
             cpu_affinity="block",  # Assigns cpus in sequential order
             prefetch_capacity=0,  # Increase if you have many more tasks than workers
@@ -48,15 +45,12 @@ sunspot_config = Config(
                 worker_init=user_opts["worker_init"],
                 walltime=user_opts["walltime"],
                 scheduler_options=user_opts["scheduler_options"],
-                launcher=MpiExecLauncher(
-                    bind_cmd="--cpu-bind", overrides="--depth=208 --ppn 1"
-                ),  # Ensures 1 manger per node and allows it to divide work among all 208 threads
-                select_options="system=sunspot,place=scatter",
                 nodes_per_block=user_opts["nodes_per_block"],
                 min_blocks=0,
                 max_blocks=1, # Can increase more to have more parallel batch jobs
-                cpus_per_node=user_opts["cpus_per_node"],
+                #cpus_per_node=user_opts["cpus_per_node"],
             ),
         ),
-    ]
+    ],
+    max_idletime = 1800
 )
