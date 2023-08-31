@@ -359,7 +359,7 @@ pip install parsl
 ```
 
 <a name="Restful_Inference_Service"></a>
-## Adding a RESTAPI calls to Parsl workflow codes in order to run the model to achieve Inference as a service.
+## Adding RESTAPI calls to Parsl workflow codes to achieve Inference as a service.
  
 
 1. SSH tunnel to the login node of sunspot.
