@@ -14,7 +14,7 @@ We have provided 3 options to run the Llama LLM on Sunspot - optimized by Intel 
 - [Building a custom 13B conda environment](#13BBuildingEnvironments)
 - [Building a custom 70B conda environment](#70BBuildingEnvironments)
 - [Inference with Parsl](#Inference_with_Parsl)
-- [Restful Inference Service - WIP](#Restful_Inference_Service)
+- [Restful Inference Service](#Restful_Inference_Service)
 - [Globus Compute/FuncX Service](#funcX)
 
 <a name="13BQuickStart"></a>
@@ -367,20 +367,20 @@ pip install parsl
 ssh -L 8000:127.0.0.1:8000 -J username@bastion.alcf.anl.gov username@sunspot.alcf.anl.gov
 ```
 
-2. To use the API to make rest api calls to parsl. Activate any existing conda environment. Using the pre-built conda environments on the login node. You can alternatively install fastapi in your custom environment by running `pip install fastapi[all]`
+2. To use the API activate any existing conda environment by using the pre-built conda environments on the login node. You can alternatively install fastapi in your custom environment by running `pip install fastapi[all]`
 ```bash
 source /soft/datascience/conda-2023-01-31/miniconda3/bin/activate
 conda activate /lus/gila/projects/Aurora_deployment/conda_env_llm/anl_llma-13b
 ```
 
-3. Clone the repository and run server
+3. Clone this repository and run server
 ```
 git clone https://github.com/atanikan/LLM-service-api.git
 cd /LLM-service-api
 uvicorn LLM_service_api:app --reload
 ```
 
-In your local browser you can head to [localhost/docs](http://localhost:8000/docs) and find two POST rest api methods run-llama/13b and run-llama/70b. For either, click on Post, Try it out, followed by Execute to run respective parsl workflows. You can change prompt to try custom prompts and modify runs as needed.
+On your local browser you can head to [localhost/docs](http://localhost:8000/docs) to find two POST REST api methods run-llama/13b and run-llama/70b. For either, click on "Post", "Try it out", followed by "Execute" to run respective parsl workflows. You can change the prompts to try custom inputs and modify runs as needed.
 
 **Note** Sometimes on Sunspot the job runs on a dead node and does not produce output. Check folders model_70B_* and runinfo, and terminate jobs if no output is recorded in the logs.
 
