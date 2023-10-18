@@ -14,7 +14,7 @@ print(df.head())
 
 with open("prompt_chat_gpt.output.txt","w") as f:
 
-    openai.api_key = "<replace>"
+    openai.api_key = os.getenv("OPENAI_API_KEY")
     model_engine = "gpt-3.5-turbo" 
     # This specifies which GPT model to use, as there are several models available, each with different capabilities and performance characteristics.
 
