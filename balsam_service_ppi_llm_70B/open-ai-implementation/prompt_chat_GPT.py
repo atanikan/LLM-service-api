@@ -14,7 +14,7 @@ print(df.head())
 
 with open("prompt_chat_gpt.output.txt","w") as f:
 
-    openai.api_key = "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"
+    openai.api_key = "<replace>"
     model_engine = "gpt-3.5-turbo" 
     # This specifies which GPT model to use, as there are several models available, each with different capabilities and performance characteristics.
 
@@ -57,6 +57,7 @@ with open("prompt_chat_gpt.output.txt","w") as f:
         elapsed_model_time = model_end_time - model_start_time
         print('Total model execution time:', elapsed_model_time, 'seconds')                        
         result = ''
+        print(f'The response of openai model for target {target} is {response.choices}')
         for choice in response.choices:
             result += choice.message.content
             
